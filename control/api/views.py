@@ -33,25 +33,27 @@ class UserUsageAPIView(APIView):
         
 
 class SetHourlyUsageAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, cid=None):
-        parent = request.user.parent
+        #parent = request.user.parent
         child = get_object_or_404(Child, id=cid)
 
-        if child.my_family != parent.my_family:
-            return Response({"error": "No permission to access this child"}, status=status.HTTP_403_FORBIDDEN)
+      #  if child.my_family != parent.my_family:
+       #     return Response({"error": "No permission to access this child"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = HourlyUsageSerializer(data=request.data)
 
         if serializer.is_valid():
             hour = serializer.validated_data['hour']
             usage_seconds = serializer.validated_data['usage_seconds']
+            date_value = serializer.validated_data['date']
+
 
             # Get or create the UserUsage for today
             user_usage, _ = UserUsage.objects.get_or_create(
                 child=child,
-                date=date.today()
+                date=date_value
             )
 
             # Check if the hour is already used today
@@ -71,3 +73,4 @@ class SetHourlyUsageAPIView(APIView):
             user_usage.hourly_usages.add(hourly_obj)
             return Response({"message": f"Hour {hour}:00 usage added successfully"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+  

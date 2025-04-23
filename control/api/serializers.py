@@ -2,9 +2,11 @@ from rest_framework import serializers
 from control.models import UserUsage, HourlyUsage
 
 class HourlyUsageSerializer(serializers.ModelSerializer):
+    date = serializers.DateField()
+
     class Meta:
         model = HourlyUsage
-        fields = ['hour', 'usage_seconds']
+        fields = ['date', 'hour', 'usage_seconds']
     
 class UserHourlyUsageSerializer(serializers.ModelSerializer):
     hourly_usages = HourlyUsageSerializer(many=True)
