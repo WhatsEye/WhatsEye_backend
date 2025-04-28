@@ -4,51 +4,33 @@ from rest_framework import serializers
 from phonenumber_field.serializerfields import PhoneNumberField
 from accounts.models import Parent, Family, BaseUser
 
-class SetPasslockSerializer(serializers.Serializer):
-    passlock = serializers.CharField(write_only=True)
+# class SetPasskeySerializer(serializers.Serializer):
+#     passkey = serializers.CharField(write_only=True)
 
-    def validate_passlock(self, value):
-        if len(value) < 4:
-            raise serializers.ValidationError("Passlock must be at least 4 characters long.")
-        return value
+#     def validate_passkey(self, value):
+#         if len(value) != 5:
+#             raise serializers.ValidationError("passkey must be at least  characters long.")
+#         return value
 
-    def update(self, instance, validated_data):
-        instance.passlock = validated_data['passlock']
-        instance.save()
-        return instance
+#     def update(self, instance, validated_data):
+#         instance.passkey = validated_data['passkey']
+#         instance.save()
+#         return instance
 
-class CheckPasslockSerializer(serializers.Serializer):
-    passlock = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        child = self.context['child']
-        if not child.check_passlock(data['passlock']):
-            raise serializers.ValidationError({"passlock": "Incorrect passlock."})
-        return data
-
-class UpdatePasslockSerializer(serializers.Serializer):
-    new_passlock = serializers.CharField(write_only=True)
-    new_passlock2 = serializers.CharField(write_only=True)
-    def validate_passlock(self, value):
-        if len(value) < 4:
-            raise serializers.ValidationError("Passlock must be at least 4 characters long.")
-        return value
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = get_user_model()
-        fields = [
-            "id",
-            "username",
-            "email",
-            "first_name",
-            "last_name",
-            "last_login",
-            "is_active",
-            "date_joined",
-        ]
-        read_only_fields = ["date_joined", "last_login"]
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = get_user_model()
+#         fields = [
+#             "id",
+#             "username",
+#             "email",
+#             "first_name",
+#             "last_name",
+#             "last_login",
+#             "is_active",
+#             "date_joined",
+#         ]
+#         read_only_fields = ["date_joined", "last_login"]
 
 
 class ResetPasswordSerializer(serializers.Serializer):

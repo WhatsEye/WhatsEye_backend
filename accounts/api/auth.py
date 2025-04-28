@@ -35,7 +35,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["family_id"] = str(family_id)
         token["username"] = str(account.user.username)
         account.ip = get_user_ip(request)
-        token["is_conformed"] = account.is_conformed
 
         account.save()
         return token
@@ -64,8 +63,9 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
     def post(self, request, pid=None, code=None, *args, **kwargs):
-        data = dict(request.data.dict())
+        data = dict(request.data)
         identifier = data["username"]
+        print(identifier)
         user = None
         if identifier.isdigit() or identifier.startswith("+"):
             try:

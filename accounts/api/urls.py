@@ -12,8 +12,8 @@ from .views import (
     RegisterFamilyAPI,
     RegisterParentAPI,
     RegisterChildAPI,
-    SetPasslockView,
-    UpdatePasslockView,
+    # SetPasskeyView,
+    # UpdatePasskeyView,
     # RegisterParentAPI,
     # JoinFamilyParentAPI,
     # JoinFamilyChildAPI,
@@ -29,8 +29,8 @@ router = routers.DefaultRouter()
 
 
 urlpatterns = [
-    path('child/passlock/set/', SetPasslockView.as_view(), name='set-passlock'),
-    path('child/passlock/update/<uuid:cid>/', UpdatePasslockView.as_view(), name='update-passlock'),
+    # path('child/passlock/set/', SetPasskeyView.as_view(), name='set-passlock'),
+    # path('child/passlock/update/<uuid:cid>/', UpdatePasskeyView.as_view(), name='update-passlock'),
 
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),

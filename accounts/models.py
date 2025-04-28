@@ -201,9 +201,7 @@ class Parent(BaseUser):
 class Child(BaseUser):
     user = models.OneToOneField(
         get_user_model(), on_delete=onDelete, related_name="child"
-    )
-    passlock = models.CharField(max_length=128)  
-    
+    )    
     def save(self, *args, **kwargs):
         if not self.conform_code:
             self.conform_code = self.generate_code()

@@ -7,9 +7,14 @@ class HourlyUsageSerializer(serializers.ModelSerializer):
     class Meta:
         model = HourlyUsage
         fields = ['date', 'hour', 'usage_seconds']
-    
+
+class HourlyUsageSerializerShow(serializers.ModelSerializer):
+    class Meta:
+        model = HourlyUsage
+        fields = ['hour', 'usage_seconds']
+        
 class UserHourlyUsageSerializer(serializers.ModelSerializer):
-    hourly_usages = HourlyUsageSerializer(many=True)
+    hourly_usages = HourlyUsageSerializerShow(many=True)
 
     class Meta:
         model = UserUsage

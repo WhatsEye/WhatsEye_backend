@@ -31,3 +31,41 @@ class UserUsage(models.Model):
         return self.hourly_usages.aggregate(
             total=models.Sum('usage_seconds')
         )['total'] or 0
+
+class ChildLocation(models.Model):
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='locations')
+
+    latitude = models.DecimalField(
+        max_digits=9, 
+        decimal_places=6,
+        help_text="Latitude coordinate"
+    )
+    longitude = models.DecimalField(
+        max_digits=9, 
+        decimal_places=6,
+        help_text="Longitude coordinate"
+    )
+    accuracy = models.FloatField(
+        help_text="Location accuracy in meters"
+    )
+    timestamp = models.DateTimeField(
+        help_text="Device timestamp of the location reading"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Server timestamp of when the record was created"
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['child', '-timestamp']),
+            models.Index(fields=['-created_at']),
+        ]
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.child.user.username} - {self.timestamp}"
+
+    @property
+    def coordinates(self):
+        return f"{self.latitude},{self.longitude}"

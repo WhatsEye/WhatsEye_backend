@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 from django.conf import settings
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
@@ -18,9 +19,7 @@ from .serializers import (
     GetCodeResetSerializer,
     RegisterFamilySerializer,
     RegisterSerializer,
-    SetPasslockSerializer, 
-    CheckPasslockSerializer, 
-    UpdatePasslockSerializer
+    # SetPasskeySerializer, 
 )
 
 
@@ -32,32 +31,36 @@ def get_user_ip(request):
         ip = request.META.get("REMOTE_ADDR")
     return ip
 
-class SetPasslockView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+# class SetPasskeyView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
-        serializer = SetPasslockSerializer(data=request.data)
-        if serializer.is_valid():
-            child = request.user.child
-            child.passlock = serializer.validated_data['passlock']
-            child.save()
-            return Response({"message": "Passlock set successfully"}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     def post(self, request):
+#         serializer = SetPasskeySerializer(data=request.data)
+#         if serializer.is_valid():
+#             child = request.user.child
+#             passkey = serializer.validated_data['passkey']
+#             hash_object = hashlib.sha256(passkey.encode('utf-8')) 
+#             child.passkey = hash_object.hexdigest()  
+#             child.save()
+#             return Response({"message": "passkey set successfully"}, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UpdatePasslockView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+# class UpdatePasskeyView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, cid=None):
-        serializer = SetPasslockSerializer(data=request.data)
-        if serializer.is_valid():
-            parent = request.user.parent
-            child = get_object_or_404(Child, id=cid)
-            if child.my_family != parent.my_family:
-                return Response({"error": "No permission to access this child"}, status=status.HTTP_403_FORBIDDEN)
-            child.passlock = serializer.validated_data['passlock']
-            child.save()
-            return Response({"message": "Passlock set successfully"}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     def post(self, request, cid=None):
+#         serializer = SetPasskeySerializer(data=request.data)
+#         if serializer.is_valid():
+#             parent = request.user.parent
+#             child = get_object_or_404(Child, id=cid)
+#             if child.my_family != parent.my_family:
+#                 return Response({"error": "No permission to access this child"}, status=status.HTTP_403_FORBIDDEN)
+#             passkey = serializer.validated_data['passkey']
+#             hash_object = hashlib.sha256(passkey.encode('utf-8')) 
+#             child.passkey = hash_object.hexdigest()  
+#             child.save()
+#             return Response({"message": "passkey set successfully"}, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ResetPasswordPhoneAPI(generics.GenericAPIView):
     serializer_class = ResetPasswordPhoneSerializer
