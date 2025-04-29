@@ -14,7 +14,6 @@ class HourlyUsage(models.Model):
     def __str__(self):
         return f"{self.hour}:00 → {self.usage_seconds} sec"
 
-
 class UserUsage(models.Model):
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='daily_usages')
     date = models.DateField()
@@ -69,3 +68,53 @@ class ChildLocation(models.Model):
     @property
     def coordinates(self):
         return f"{self.latitude},{self.longitude}"
+    
+class Schedule(models.Model):
+    RESTRICTION_CHOICES = [
+        ('LOCK_DEVICE', 'Lock Device'),
+        ('BLOCK_WHATSAPP', 'Block WhatsApp'),
+    ]
+
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='schedules')
+    name = models.CharField(max_length=100)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    # For recurring weekly schedules
+    days_of_week = models.CharField(max_length=20, blank=True)  # "0,1,2,3,4" (optional)
+
+    # For one-time or date-range schedules
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+
+    restriction_type = models.CharField(max_length=20, choices=RESTRICTION_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_recurring(self):
+        return bool(self.days_of_week)
+
+    def __str__(self):
+        return f"{self.name} for {self.child.user.username}"
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('message', 'Message'),
+        ('alert', 'Alert'),
+        ('reminder', 'Reminder'),
+        ('info', 'Information'),
+        ('warning', 'Warning'),
+    )
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+
+    def __str__(self):
+        return f"Notification: {self.title} (Type: {self.type}, Timestamp: {self.timestamp})"
+
+    class Meta:
+        ordering = ['-timestamp']  # To order notifications by most recent first
+
+

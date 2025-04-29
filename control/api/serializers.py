@@ -1,5 +1,32 @@
 from rest_framework import serializers
-from control.models import UserUsage, HourlyUsage
+from control.models import UserUsage, HourlyUsage ,ChildLocation, Notification
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'child', 'title', 'content', 'timestamp', 'type']  # Specify fields you want to expose
+
+
+class ChildLocationSerializer(serializers.ModelSerializer):
+    coordinates = serializers.CharField(read_only=True)
+    class Meta:
+        model = ChildLocation
+        fields = [
+            'id',  # Include ID for reference
+            'latitude',
+            'longitude',
+            'coordinates',
+            'accuracy',
+            'timestamp',
+            'created_at'
+        ]
+    def get_coordinates(self, obj):
+        return {
+            "type": "Point",
+            "coordinates": [float(obj.longitude), float(obj.latitude)]
+        }
+
+
 
 class HourlyUsageSerializer(serializers.ModelSerializer):
     date = serializers.DateField()
