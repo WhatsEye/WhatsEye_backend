@@ -1,7 +1,8 @@
 import os
 
-from core.channelsmiddleware import TokenAuthMiddleware
 from control.routings import websocket_urlpatterns
+from core.channelsmiddleware import TokenAuthMiddleware
+
 # from django.conf.urls import url
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
@@ -17,12 +18,13 @@ from django.urls import re_path
 application = ProtocolTypeRouter(
     {
         "http": get_asgi_application(),
-        #"https": get_asgi_application(),
+        # "https": get_asgi_application(),
         # "websocket": URLRouter(websocket_urlpatterns),
         "websocket": OriginValidator(
             TokenAuthMiddleware(URLRouter(websocket_urlpatterns)),
-            ["*",],
+            [
+                "*",
+            ],
         ),
     }
 )
-

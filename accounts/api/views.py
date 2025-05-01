@@ -1,26 +1,24 @@
 import datetime
 import hashlib
+
 from django.conf import settings
+from django.contrib.auth import get_user_model, update_session_auth_hash
+from django.core.mail import EmailMessage
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
-from django.contrib.auth import get_user_model, update_session_auth_hash
+from rest_framework import (filters, generics, pagination, permissions, status,
+                            viewsets)
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import filters, generics, pagination, status, viewsets, permissions
-from rest_framework.decorators import api_view
-from accounts.models import Parent, Child, ResetPassword, Family
-from django.core.mail import EmailMessage
 
-from .serializers import (
-    ResetPasswordSerializer,
-    ResetPasswordPhoneSerializer,
-    ChangePasswordSerializer,
-    GetCodeResetSerializer,
-    RegisterFamilySerializer,
-    RegisterSerializer,
-    # SetPasskeySerializer, 
-)
+from accounts.models import Child, Family, Parent, ResetPassword
+
+from .serializers import (ChangePasswordSerializer,  # SetPasskeySerializer,
+                          GetCodeResetSerializer, RegisterFamilySerializer,
+                          RegisterSerializer, ResetPasswordPhoneSerializer,
+                          ResetPasswordSerializer)
 
 
 def get_user_ip(request):
@@ -31,6 +29,7 @@ def get_user_ip(request):
         ip = request.META.get("REMOTE_ADDR")
     return ip
 
+
 # class SetPasskeyView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]
 
@@ -39,8 +38,8 @@ def get_user_ip(request):
 #         if serializer.is_valid():
 #             child = request.user.child
 #             passkey = serializer.validated_data['passkey']
-#             hash_object = hashlib.sha256(passkey.encode('utf-8')) 
-#             child.passkey = hash_object.hexdigest()  
+#             hash_object = hashlib.sha256(passkey.encode('utf-8'))
+#             child.passkey = hash_object.hexdigest()
 #             child.save()
 #             return Response({"message": "passkey set successfully"}, status=status.HTTP_200_OK)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -56,11 +55,12 @@ def get_user_ip(request):
 #             if child.my_family != parent.my_family:
 #                 return Response({"error": "No permission to access this child"}, status=status.HTTP_403_FORBIDDEN)
 #             passkey = serializer.validated_data['passkey']
-#             hash_object = hashlib.sha256(passkey.encode('utf-8')) 
-#             child.passkey = hash_object.hexdigest()  
+#             hash_object = hashlib.sha256(passkey.encode('utf-8'))
+#             child.passkey = hash_object.hexdigest()
 #             child.save()
 #             return Response({"message": "passkey set successfully"}, status=status.HTTP_200_OK)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ResetPasswordPhoneAPI(generics.GenericAPIView):
     serializer_class = ResetPasswordPhoneSerializer
@@ -88,6 +88,7 @@ class ResetPasswordPhoneAPI(generics.GenericAPIView):
         return Response(
             {"status": status.HTTP_406_NOT_ACCEPTABLE, "error": data.errors}
         )
+
 
 class ResetPasswordAPI(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
@@ -119,6 +120,7 @@ class ResetPasswordAPI(generics.GenericAPIView):
         return Response(
             {"status": status.HTTP_406_NOT_ACCEPTABLE, "error": data.errors}
         )
+
 
 class CodeResetAPI(generics.GenericAPIView):
     serializer_class = GetCodeResetSerializer
@@ -278,6 +280,7 @@ class RegisterChildAPI(generics.GenericAPIView):
         # msg.send()
         return Response({"status": status.HTTP_200_OK})
 
+
 @api_view(["get"])
 def parentInvitationAPI(request, email):
     user = request.user
@@ -296,6 +299,7 @@ def parentInvitationAPI(request, email):
     msg.content_subtype = "html"
     msg.send()
     return Response({"status": status.HTTP_200_OK})
+
 
 @api_view(["get"])
 def resendResetPasswordAPI(request, username_email):
@@ -332,4 +336,3 @@ def resendResetPasswordAPI(request, username_email):
                 return Response({"status": status.HTTP_200_OK})
 
     return Response({"status": status.HTTP_406_NOT_ACCEPTABLE, "error": "no user"})
-

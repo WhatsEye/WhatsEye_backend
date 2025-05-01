@@ -1,21 +1,20 @@
+import json
 import os
 import random
 import secrets
-import qrcode
-import json
-
 from io import BytesIO
-from PIL import Image
 from uuid import uuid4
+
+import qrcode
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ValidationError
+from django.core.files import File
 from django.db import models
 from django.db.models import Q
-from django.core.files import File
-from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
-from django.contrib.auth.hashers import make_password, check_password
-
+from PIL import Image
 
 
 # models functions
@@ -194,14 +193,17 @@ class Parent(BaseUser):
     @property
     def make_icon(self):
         resize_photo(self.photo_icon, 200)
+
     @property
     def my_family(self):
         return (self.father.all() | self.mother.all()).first()
 
+
 class Child(BaseUser):
     user = models.OneToOneField(
         get_user_model(), on_delete=onDelete, related_name="child"
-    )    
+    )
+
     def save(self, *args, **kwargs):
         if not self.conform_code:
             self.conform_code = self.generate_code()

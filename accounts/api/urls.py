@@ -1,25 +1,12 @@
-from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
-from rest_framework import routers
-
 from django.urls import path
-from .views import (
-    ResetPasswordAPI,
-    ResetPasswordPhoneAPI,
-    resendResetPasswordAPI,
-    parentInvitationAPI,
-    ChangePasswordAPI,
-    CodeResetAPI,
-    RegisterFamilyAPI,
-    RegisterParentAPI,
-    RegisterChildAPI,
-    # SetPasskeyView,
-    # UpdatePasskeyView,
-    # RegisterParentAPI,
-    # JoinFamilyParentAPI,
-    # JoinFamilyChildAPI,
-    # FamilyViewSet
-)
+from rest_framework import routers
+from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+
 from .auth import MyTokenObtainPairView
+from .views import (  # SetPasskeyView,; UpdatePasskeyView,; RegisterParentAPI,; JoinFamilyParentAPI,; JoinFamilyChildAPI,; FamilyViewSet
+    ChangePasswordAPI, CodeResetAPI, RegisterChildAPI, RegisterFamilyAPI,
+    RegisterParentAPI, ResetPasswordAPI, ResetPasswordPhoneAPI,
+    parentInvitationAPI, resendResetPasswordAPI)
 
 app_name = "accounts"
 
@@ -31,7 +18,6 @@ router = routers.DefaultRouter()
 urlpatterns = [
     # path('child/passlock/set/', SetPasskeyView.as_view(), name='set-passlock'),
     # path('child/passlock/update/<uuid:cid>/', UpdatePasskeyView.as_view(), name='update-passlock'),
-
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path(

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Parent, Child, Family, ResetPassword
+
+from .models import Child, Family, Parent, ResetPassword
 
 # Register your models here.
 admin.site.register(Parent)

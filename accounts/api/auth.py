@@ -1,20 +1,17 @@
-from django.utils import timezone
-from rest_framework import status, serializers
-from rest_framework.response import Response
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.translation import gettext as _
+from phonenumbers import (NumberParseException, PhoneNumberFormat,
+                          format_number, is_valid_number, parse)
+from rest_framework import serializers, status
+from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-from phonenumbers import (
-    parse,
-    format_number,
-    PhoneNumberFormat,
-    NumberParseException,
-    is_valid_number,
-)
-from accounts.models import Parent, Child
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+from accounts.models import Child, Parent
+
 from .views import get_user_ip
 
 User = get_user_model()
