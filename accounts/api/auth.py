@@ -12,9 +12,17 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from accounts.models import Child, Parent
 
-from .views import get_user_ip
+
 
 User = get_user_model()
+
+def get_user_ip(request):
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0]
+    else:
+        ip = request.META.get("REMOTE_ADDR")
+    return ip
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

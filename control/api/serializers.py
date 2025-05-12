@@ -1,8 +1,18 @@
 from rest_framework import serializers
 
 from control.models import (BadWord, ChildLocation, HourlyUsage, Notification,
-                            UserUsage)
+                            UserUsage, Schedule)
 
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    is_active_now = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Schedule
+        fields = '__all__'
+
+    def get_is_active_now(self, obj):
+        return obj.is_active_now
 
 class BadWordSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,6 +21,7 @@ class BadWordSerializer(serializers.ModelSerializer):
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Notification
         fields = [

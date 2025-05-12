@@ -14,11 +14,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Child, Family, Parent, ResetPassword
+from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializers import (ChangePasswordSerializer,  # SetPasskeySerializer,
+from .auth import MyTokenObtainPairSerializer
+from .serializers import (ChangePasswordSerializer,
                           GetCodeResetSerializer, RegisterFamilySerializer,
                           RegisterSerializer, ResetPasswordPhoneSerializer,
-                          ResetPasswordSerializer)
+                          ResetPasswordSerializer, FamilyProfileSerializer,UserSerializer,
+                          ChildProfileSerializer,ParentProfileSerializer)
 
 
 def get_user_ip(request):
@@ -29,39 +32,43 @@ def get_user_ip(request):
         ip = request.META.get("REMOTE_ADDR")
     return ip
 
+class ChildProfileAPI(generics.RetrieveUpdateAPIView):
+    serializer_class = ChildProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = "id"  
+    lookup_url_kwarg = "id"  
 
-# class SetPasskeyView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return Child.objects.all()
 
-#     def post(self, request):
-#         serializer = SetPasskeySerializer(data=request.data)
-#         if serializer.is_valid():
-#             child = request.user.child
-#             passkey = serializer.validated_data['passkey']
-#             hash_object = hashlib.sha256(passkey.encode('utf-8'))
-#             child.passkey = hash_object.hexdigest()
-#             child.save()
-#             return Response({"message": "passkey set successfully"}, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# class UpdatePasskeyView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def post(self, request, cid=None):
-#         serializer = SetPasskeySerializer(data=request.data)
-#         if serializer.is_valid():
-#             parent = request.user.parent
-#             child = get_object_or_404(Child, id=cid)
-#             if child.my_family != parent.my_family:
-#                 return Response({"error": "No permission to access this child"}, status=status.HTTP_403_FORBIDDEN)
-#             passkey = serializer.validated_data['passkey']
-#             hash_object = hashlib.sha256(passkey.encode('utf-8'))
-#             child.passkey = hash_object.hexdigest()
-#             child.save()
-#             return Response({"message": "passkey set successfully"}, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_object(self):
+        uuid = self.kwargs.get(self.lookup_url_kwarg)
+        queryset = self.get_queryset().filter(id=uuid)
+        obj = generics.get_object_or_404(queryset)
+        return obj
+    
+class ParentProfileAPI(generics.RetrieveUpdateAPIView):
+    serializer_class = ParentProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]  # Support file uploads for photo
 
 
+    def get_queryset(self):
+        return Parent.objects.filter(user=self.request.user)
+
+    def get_object(self):
+        return self.get_queryset().first()
+
+class FamilyProfileAPI(generics.RetrieveUpdateAPIView):
+    serializer_class = FamilyProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Family.objects.filter(father__user=self.request.user) | Family.objects.filter(mother__user=self.request.user)
+
+    def get_object(self):
+        return self.get_queryset().first()
+    
 class ResetPasswordPhoneAPI(generics.GenericAPIView):
     serializer_class = ResetPasswordPhoneSerializer
 
@@ -69,9 +76,7 @@ class ResetPasswordPhoneAPI(generics.GenericAPIView):
         data = self.get_serializer(data=request.data)
         if data.is_valid():
             number = request.data["number"]
-            data1 = Parent.objects.filter(phone_number=number)
-            data2 = Child.objects.filter(phone_number=number)
-            data = data1 if data1 != None else data2
+            data = get_object_or_404(Parent, phone_number=number)
             if data != None:
                 obj = ResetPassword.objects.create(
                     phone_number=number, username_email=data.first().user.email
@@ -88,7 +93,6 @@ class ResetPasswordPhoneAPI(generics.GenericAPIView):
         return Response(
             {"status": status.HTTP_406_NOT_ACCEPTABLE, "error": data.errors}
         )
-
 
 class ResetPasswordAPI(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
@@ -246,46 +250,61 @@ class RegisterChildAPI(generics.GenericAPIView):
     serializer_class = RegisterSerializer
 
     def post(self, request, fid=None, code=None, *args, **kwargs):
+        print(request.data["phone_number"]["phone_number"])
         family = get_object_or_404(Family, id=fid, qr_code=code)
-        family.get_new_qr
-        family.save()
-
+       
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-
-        user = Child(
+        child = Child(
             user=user,
-            phone_number=request.data["phone_number.phone_number"],
             gender=request.data["gender"],
             birthday=request.data["birthday"],
         )
-        user.first_ip = get_user_ip(request)
-        user.ip = get_user_ip(request)
-        user.get_new_code
-        user.save()
-        family.kids.add(user)
+        child.phone_number = request.data["phone_number"]["phone_number"]
+        child.phone_locked = False
+        child.first_ip = get_user_ip(request)
+        child.ip = get_user_ip(request)
+        child.save()
+        family.kids.add(child)
+        family.get_new_qr
+        family.save()
+         # Generate tokens for the user
+        token_serializer = MyTokenObtainPairSerializer(data={
+            'username': user.username,
+            'password': request.data.get('password')  # Assuming password is sent in request.data
+        }, context={'request': request})
+        token_serializer.is_valid(raise_exception=True)
+        tokens = token_serializer.validated_data
 
-        # template = render_to_string(
-        #     "email/code_conform.html",
-        #     {"code": user.profile.conform_code, "username": user.username},
-        # )
-        # msg = EmailMessage(
-        #     "Confirmez votre compte",
-        #     template,
-        #     settings.EMAIL_HOST_USER,
-        #     [user.email],
-        # )
-        # msg.content_subtype = "html"
-        # msg.send()
+        # Return response with tokens
+        return Response({
+            "status": status.HTTP_200_OK,
+            "access": tokens.get('access'),
+            "refresh": tokens.get('refresh')
+        })
         return Response({"status": status.HTTP_200_OK})
 
+
+@api_view(["post"])
+def setWhatsAppNameAPI(request, num=None, name=None):
+
+    user = request.user
+    child = get_object_or_404(Child, user=user)
+    if(num==1):
+        child.whatsapp_name= name
+    elif(num==2):
+        child.whatsapp2_name= name
+    else:
+        return Response({"status": status.HTTP_400_BAD_REQUEST})
+    child.save()
+    return Response({"status": status.HTTP_200_OK})
 
 @api_view(["get"])
 def parentInvitationAPI(request, email):
     user = request.user
     family = Family.objects.filter(Q(father__user=user) | Q(mother__user=user)).first()
-    print(family)
+
     template = render_to_string(
         "email/invitation.html",
         {"fid": family.id, "code": user.parent.qr_code},

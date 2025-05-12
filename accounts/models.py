@@ -69,28 +69,6 @@ def generate_qr_code(instance):
         raise ValidationError(_("Couldn't generate a QR code for the given instance."))
 
 
-def resize_photo(photo_icon, size):
-    """
-    Resize a photo to the specified dimensions.
-
-    Args:
-        photo_icon: Photo field to resize
-        size: Target size in pixels
-
-    Returns:
-        Resized image
-    """
-    try:
-        size = (size, size)
-        img = Image.open(photo_icon.path)
-        img.thumbnail(size)
-        img.save(photo_icon.path)
-    except Exception as e:
-        raise ValidationError(
-            _("Couldn't Resize the photo to the specified dimensions.")
-        )
-
-
 # models
 onDelete = models.CASCADE
 
@@ -112,19 +90,12 @@ class BaseUser(models.Model):
     ip = models.GenericIPAddressField(blank=False, editable=False, null=True)
 
     created_at = models.DateTimeField(_("created"), auto_now_add=True)
-    last_seen = models.DateTimeField(blank=True, null=True)
 
     deleted = models.BooleanField(default=False)
 
     photo = models.ImageField(
         _("user picture"),
         upload_to=save_picture,
-        null=True,
-        blank=True,
-    )
-    photo_icon = models.ImageField(
-        _("user picture icon"),
-        upload_to=save_icon,
         null=True,
         blank=True,
     )
@@ -179,20 +150,16 @@ class Parent(BaseUser):
         if not self.conform_code:
             self.conform_code = self.generate_code()
 
-        if not self.photo or not self.photo_icon:
+        if not self.photo :
             default_image = "man.png" if self.gender == "M" else "woman.png"
             default_path = f"default/{default_image}"
             self.photo = default_path
-            self.photo_icon = default_path
         super().save(*args, **kwargs)
 
     @property
     def get_new_qr(self):
         generate_qr_code(self)
 
-    @property
-    def make_icon(self):
-        resize_photo(self.photo_icon, 200)
 
     @property
     def my_family(self):
@@ -203,20 +170,17 @@ class Child(BaseUser):
     user = models.OneToOneField(
         get_user_model(), on_delete=onDelete, related_name="child"
     )
-
+    whatsapp_name = models.CharField(max_length=255)
+    whatsapp2_name = models.CharField(max_length=255)
+    phone_locked = models.BooleanField(default=True)
     def save(self, *args, **kwargs):
         if not self.conform_code:
             self.conform_code = self.generate_code()
-        if not self.photo or not self.photo_icon:
+        if not self.photo :
             default_image = "boy.png" if self.gender == "M" else "girl.png"
             default_path = f"default/{default_image}"
             self.photo = default_path
-            self.photo_icon = default_path
         super().save(*args, **kwargs)
-
-    @property
-    def make_icon(self):
-        resize_photo(self.photo_icon, 200)
 
     @property
     def my_family(self):
@@ -224,27 +188,12 @@ class Child(BaseUser):
 
 
 class Family(models.Model):
-    CREATER_CHOICES = [
-        ("F", "Father"),
-        ("M", "Mother"),
-    ]
-    FAMILY_STATUS_CHOICES = [
-        ("M", "Married"),
-        ("D", "Divorced"),
-        ("S", "Single"),
-        ("W", "Widowed"),
-    ]
+
     id = models.UUIDField(default=uuid4, primary_key=True, editable=False)
     name = models.CharField(max_length=100, help_text="Family name")
     about = models.CharField(max_length=255, blank=True)
-    family_status = models.CharField(
-        max_length=1,
-        choices=FAMILY_STATUS_CHOICES,
-        default="M",
-        help_text="relational status of the family",
-    )
 
-    creater = models.CharField(max_length=1, choices=CREATER_CHOICES, blank=False)
+
     father = models.ForeignKey(
         Parent, on_delete=onDelete, related_name="father", blank=True, null=True
     )
@@ -258,7 +207,7 @@ class Family(models.Model):
     last_updated = models.DateTimeField(_("updated"), auto_now=True)
     qr_code = models.CharField(max_length=40, blank=False, editable=False)
     qr_image = models.ImageField(
-        _("parent qr"),
+        _("Family qr"),
         upload_to=save_qr,
         null=True,
         blank=True,
@@ -270,30 +219,17 @@ class Family(models.Model):
         blank=True,
         null=True,
     )
-    photo_icon = models.ImageField(
-        _("Family profil picture icon"),
-        upload_to=save_icon,
-        default="default/family.png",
-        blank=True,
-        null=True,
-    )
-
     class Meta:
         verbose_name = "Family"
         verbose_name_plural = "Families"
         unique_together = ["father", "mother"]
 
-    def clean(self, *args, **kwargs):
-        if self.photo and not self.pk:
-            if self.photo.width <= 300 or self.photo.height <= 300:
-                raise ValidationError(_(f"{self.photo.name}  size not valid "))
+    
 
     def save(self, *args, **kwargs):
         if not self.qr_code:
             generate_qr_code(self)
         super().save(*args, **kwargs)
-        if self.photo_icon:
-            resize_photo(self.photo_icon, 200)
 
     @property
     def get_new_qr(self):

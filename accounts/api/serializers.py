@@ -3,35 +3,113 @@ from django.db.models import Count, Q
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
-from accounts.models import BaseUser, Family, Parent
+from accounts.models import BaseUser, Family, Parent, Child
 
-# class SetPasskeySerializer(serializers.Serializer):
-#     passkey = serializers.CharField(write_only=True)
+from rest_framework import serializers
 
-#     def validate_passkey(self, value):
-#         if len(value) != 5:
-#             raise serializers.ValidationError("passkey must be at least  characters long.")
-#         return value
 
-#     def update(self, instance, validated_data):
-#         instance.passkey = validated_data['passkey']
-#         instance.save()
-#         return instance
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "last_login",
+            "is_active",
+            "date_joined",
+        ]
+        read_only_fields = ["id", "username","date_joined", "last_login"]
+        
+class BaseUserShortSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    user_id = serializers.SerializerMethodField()
 
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = get_user_model()
-#         fields = [
-#             "id",
-#             "username",
-#             "email",
-#             "first_name",
-#             "last_name",
-#             "last_login",
-#             "is_active",
-#             "date_joined",
-#         ]
-#         read_only_fields = ["date_joined", "last_login"]
+    class Meta:
+        fields = [
+            "id",
+            "user_id",
+            "username",
+            "photo",
+        ]
+
+    def get_username(self, obj):
+        return getattr(obj.user, "username", None)
+
+    def get_user_id(self, obj):
+        return getattr(obj.user, "id", None)
+
+class ChildShortSerializer(BaseUserShortSerializer):
+    class Meta(BaseUserShortSerializer.Meta):
+        model = Child
+
+class ParentShortSerializer(BaseUserShortSerializer):
+    class Meta(BaseUserShortSerializer.Meta):
+        model = Parent
+
+class ChildProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = Child
+        fields = (
+            "id",
+            "photo",
+            "birthday",
+            "phone_number",
+            "whatsapp_name",
+            "whatsapp2_name",
+            "phone_locked",
+            "user"
+        )
+        read_only_fields = ["id"]
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)
+        
+        if user_data:
+            user_serializer = UserSerializer(instance.user, data=user_data, partial=True)
+            if user_serializer.is_valid():
+                user_serializer.save()
+        return super().update(instance, validated_data)        
+
+class ParentProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = Parent
+        fields = (
+            "id",
+            "photo",
+            "birthday",
+            "phone_number",
+            "user"
+        )
+    def update(self, instance, validated_data):
+        # Extract user data from validated data
+        user_data = validated_data.pop("user", None)
+        
+        # Update user if user_data is provided
+        if user_data:
+            user_serializer = UserSerializer(instance.user, data=user_data, partial=True)
+            if user_serializer.is_valid():
+                user_serializer.save()
+        
+        # Update parent fields
+        return super().update(instance, validated_data)
+
+class FamilyProfileSerializer(serializers.ModelSerializer):
+    kids = ChildShortSerializer(many=True, read_only=True)
+    count_kids = serializers.SerializerMethodField(read_only=True)
+    count_parents = serializers.SerializerMethodField(read_only=True)
+    class Meta:
+        model = Family
+        fields = ["id", "photo",  "name", "about", "kids", "count_kids", "count_parents"]
+
+    def get_count_kids(self, obj):
+        return obj.kids.all().count()
+    
+    def get_count_parents(self, obj):
+        return int(obj.father!=None) + int(obj.mother!=None)
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -83,14 +161,14 @@ class ChangePasswordSerializer(serializers.Serializer):
 class ParentAPI(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = ["phone_number", "birthday", "gender", "photo", "photo_icon"]
+        fields = ["phone_number", "birthday", "gender", "photo"]
         read_only_fields = ["is_confirmed"]
 
 
 class RegisterFamilySerializer(serializers.ModelSerializer):
     class Meta:
         model = Family
-        fields = ["id", "name", "about", "family_status"]
+        fields = ["id", "name", "about"]
         read_only_fields = [
             "id",
         ]
