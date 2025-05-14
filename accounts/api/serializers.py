@@ -7,6 +7,8 @@ from accounts.models import BaseUser, Family, Parent, Child
 
 from rest_framework import serializers
 
+from control.models import Notification, ChildCallRecording
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,6 +53,9 @@ class ParentShortSerializer(BaseUserShortSerializer):
 
 class ChildProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer()
+    num_unread_notifications = serializers.SerializerMethodField(read_only=True)
+    num_unread_voice_calls = serializers.SerializerMethodField(read_only=True)
+    num_unread_video_calls = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = Child
         fields = (
@@ -61,9 +66,25 @@ class ChildProfileSerializer(serializers.ModelSerializer):
             "whatsapp_name",
             "whatsapp2_name",
             "phone_locked",
-            "user"
+            "user",
+            'num_unread_notifications', 
+            'num_unread_voice_calls', 
+            'num_unread_video_calls'
         )
         read_only_fields = ["id"]
+    
+    def get_num_unread_notifications(self, obj):
+        # Example: count notifications where 'read' is False
+        return Notification.objects.filter(child__user=obj.user, is_read=False).count()
+
+    def get_num_unread_voice_calls(self, obj):
+        # Example: count unread voice calls
+        return ChildCallRecording.objects.filter(child__user=obj.user, recording_type='voice', is_read=False).count()
+
+    def get_num_unread_video_calls(self, obj):
+        # Example: count unread video calls
+        return ChildCallRecording.objects.filter(child__user=obj.user, recording_type='video', is_read=False).count()
+    
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", None)
         

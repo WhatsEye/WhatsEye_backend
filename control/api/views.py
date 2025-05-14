@@ -83,7 +83,6 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(child__id=child_id)
         return queryset
 
-
 class ChildCallRecordingUpdateView(generics.UpdateAPIView):
     queryset = ChildCallRecording.objects.filter(is_deleted=False)
     serializer_class = ChildCallRecordingSerializer
@@ -103,8 +102,9 @@ class ChildCallRecordingUpdateView(generics.UpdateAPIView):
     
 class ChildCallRecordingAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated] 
+    pagination_class = StandardResultsSetPagination
 
-    def get(self, request, child_id=None):
+    def get(self, request, child_id=None, recording_type=None):
         child = get_object_or_404(Child, id=child_id)
         parent = Parent.objects.filter(user=self.request.user).first() 
         if not parent or child.my_family != parent.my_family:
@@ -113,9 +113,23 @@ class ChildCallRecordingAPIView(APIView):
                 message="No permission to access this child",
                 code=status.HTTP_403_FORBIDDEN,
             )
-        recordings = ChildCallRecording.objects.filter(child=child, is_deleted=False)
-        serializer = ChildCallRecordingSerializer(recordings, many=True)
-        return Response(serializer.data)
+        if recording_type not in ["voice", "video"]:
+            return Response({"detail": "Invalid recording type."}, status=status.HTTP_400_BAD_REQUEST)
+
+        recordings = ChildCallRecording.objects.filter(
+            child=child,
+            is_deleted=False,
+            recording_type=recording_type,
+            )
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(recordings, request)
+
+        serializer = ChildCallRecordingSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    
+class ChildCallRecordingPostAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated] 
 
     def post(self, request, child_id=None):
         child = get_object_or_404(Child, id=child_id)
@@ -128,12 +142,14 @@ class ChildCallRecordingAPIView(APIView):
         data = request.data.copy()
         data['child'] = str(child.id)
         serializer = ChildCallRecordingSerializer(data=data)
+        
         if serializer.is_valid():
             serializer.save()
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
 class ChangeChildPasswordAPI(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
 
@@ -234,20 +250,10 @@ class NotificationListView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.get_queryset()
-            unread_count = queryset.filter(is_read=False).count()
+            queryset.update(is_read=True)
             serializer = self.get_serializer(queryset, many=True)
-            if ("unread" in request.path.lower()):
-                return Response(
-                    {
-                        "unread_count": unread_count,
-                    },
-                    status=status.HTTP_200_OK
-                )
-            return Response(
-                    {
-                        "unread_count": unread_count,
-                        "notification": serializer.data
-                    },
+            
+            return Response(serializer.data,
                     status=status.HTTP_200_OK
                 )
         except Exception as e:
