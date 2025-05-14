@@ -12,11 +12,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from accounts.api.serializers import ChangePasswordSerializer
 from accounts.models import Child, Parent
 from control.models import (BadWord, ChildBadWords, ChildLocation, HourlyUsage,
-                            Notification, UserUsage,Schedule)
+                            Notification, UserUsage,Schedule,ChildCallRecording)
 
 from .serializers import (ScheduleSerializer, ChildLocationSerializer,
                           HourlyUsageSerializer, NotificationSerializer,
-                          UserDailyUsageSerializer, UserHourlyUsageSerializer)
+                          UserDailyUsageSerializer, UserHourlyUsageSerializer,
+                          ChildCallRecordingSerializer)
 
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
@@ -81,7 +82,58 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             )
         queryset = queryset.filter(child__id=child_id)
         return queryset
+
+
+class ChildCallRecordingUpdateView(generics.UpdateAPIView):
+    queryset = ChildCallRecording.objects.filter(is_deleted=False)
+    serializer_class = ChildCallRecordingSerializer
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        child_id = self.kwargs['child_id']
+        child = get_object_or_404(Child, id=child_id)
+        parent = Parent.objects.filter(user=self.request.user).first() 
+        if not parent or child.my_family != parent.my_family:
+            self.permission_denied(
+                self.request,
+                message="No permission to access this child",
+                code=status.HTTP_403_FORBIDDEN,
+            )
+        return self.queryset.filter(child__id=child_id)
     
+class ChildCallRecordingAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def get(self, request, child_id=None):
+        child = get_object_or_404(Child, id=child_id)
+        parent = Parent.objects.filter(user=self.request.user).first() 
+        if not parent or child.my_family != parent.my_family:
+            self.permission_denied(
+                self.request,
+                message="No permission to access this child",
+                code=status.HTTP_403_FORBIDDEN,
+            )
+        recordings = ChildCallRecording.objects.filter(child=child, is_deleted=False)
+        serializer = ChildCallRecordingSerializer(recordings, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, child_id=None):
+        child = get_object_or_404(Child, id=child_id)
+        if request.user != child.user:
+            self.permission_denied(
+                self.request,
+                message="No permission to access this child",
+                code=status.HTTP_403_FORBIDDEN,
+            )
+        data = request.data.copy()
+        data['child'] = str(child.id)
+        serializer = ChildCallRecordingSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
 class ChangeChildPasswordAPI(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
 

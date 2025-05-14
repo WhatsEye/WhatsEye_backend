@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from django.db import models
 from django.forms import ValidationError
@@ -5,6 +6,11 @@ from django.forms import ValidationError
 from accounts.models import Child
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.postgres.fields import ArrayField
+
+
+def child_record_upload_path(instance, filename):
+    # Use the child's ID in the path
+    return os.path.join('records', str(instance.child.id), filename)
 
 
 class HourlyUsage(models.Model):
@@ -191,3 +197,18 @@ class ChildBadWords(models.Model):
 
     def __str__(self):
         return f"{self.child.user.username}'s BadWord list"
+
+
+
+
+class ChildCallRecording(models.Model):
+    child = models.ForeignKey(
+        Child, on_delete=models.CASCADE, related_name="records"
+    )
+    date = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+    audio_file = models.FileField(upload_to=child_record_upload_path)
+
+    def __str__(self):
+        return f"{self.child.user} - {self.date}"
+    

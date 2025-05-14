@@ -1,9 +1,13 @@
 from django.urls import path
 
 from .views import (ChildLocationListView, NotificationListView,
-                    SetHourlyUsageAPIView, UserUsageAPIView,ScheduleViewSet, ScheduleChildListView, ChildBadWordsView,ChangeChildPasswordAPI)
+                    SetHourlyUsageAPIView, UserUsageAPIView,ScheduleViewSet,
+                    ScheduleChildListView, ChildBadWordsView,ChangeChildPasswordAPI,
+                    ChildCallRecordingAPIView,ChildCallRecordingUpdateView)
 
 urlpatterns = [
+    path('voice/<uuid:child_id>/', ChildCallRecordingAPIView.as_view(), name='child-voice'),
+    path('voice/<uuid:child_id>/<int:pk>/', ChildCallRecordingUpdateView.as_view(), name='child-voice-update'),
     path('schedules/', ScheduleChildListView.as_view(),name="child-schedules"),
     path('schedules/<uuid:child_id>/', ScheduleViewSet.as_view({'get': 'list', 'post': 'create'})),
     path('schedules/<uuid:child_id>/<int:pk>/', ScheduleViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update'})),

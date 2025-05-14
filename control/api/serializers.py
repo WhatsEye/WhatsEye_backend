@@ -1,7 +1,15 @@
 from rest_framework import serializers
 
 from control.models import (BadWord, ChildLocation, HourlyUsage, Notification,
-                            UserUsage, Schedule)
+                            UserUsage, Schedule, ChildCallRecording)
+
+
+class ChildCallRecordingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ChildCallRecording
+        fields = '__all__'
+        read_only_fields = ['date']
 
 
 class ScheduleSerializer(serializers.ModelSerializer):

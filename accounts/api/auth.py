@@ -70,11 +70,10 @@ class MyTokenObtainPairView(TokenObtainPairView):
     def post(self, request, pid=None, code=None, *args, **kwargs):
         data = dict(request.data)
         identifier = data["username"]
-        print(identifier)
         user = None
         if identifier.isdigit() or identifier.startswith("+"):
             try:
-                parsed_number = parse(identifier, "DZ")
+                parsed_number = parse(identifier,"")
                 if is_valid_number(parsed_number):
                     identifier = format_number(parsed_number, PhoneNumberFormat.E164)
             except NumberParseException:
