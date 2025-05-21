@@ -83,9 +83,6 @@ class BaseUser(models.Model):
     birthday = models.DateField(_("birthday"), blank=False)
     phone_number = PhoneNumberField(unique=True, blank=False)
 
-    is_confirmed = models.BooleanField(default=False)
-    conform_code = models.CharField(max_length=7, blank=False, editable=False)
-
     first_ip = models.GenericIPAddressField(blank=False, editable=False, null=True)
     ip = models.GenericIPAddressField(blank=False, editable=False, null=True)
 
@@ -102,13 +99,6 @@ class BaseUser(models.Model):
 
     class Meta:
         abstract = True
-
-    def generate_code(self):
-        return random.randint(1000000, 9999999)
-
-    @property
-    def get_new_code(self):
-        self.conform_code = self.generate_code()
 
     def clean(self, *args, **kwargs):
         super().clean()
@@ -136,6 +126,8 @@ class Parent(BaseUser):
     user = models.OneToOneField(
         get_user_model(), on_delete=onDelete, related_name="parent"
     )
+    is_confirmed = models.BooleanField(default=False)
+    conform_code = models.CharField(max_length=7, blank=False, editable=False)
     qr_code = models.CharField(max_length=40, blank=False, editable=False)
     qr_image = models.ImageField(
         _("parent qr"),
@@ -159,7 +151,13 @@ class Parent(BaseUser):
     @property
     def get_new_qr(self):
         generate_qr_code(self)
+    
+    def generate_code(self):
+        return random.randint(1000000, 9999999)
 
+    @property
+    def get_new_code(self):
+        self.conform_code = self.generate_code()
 
     @property
     def my_family(self):
@@ -170,8 +168,7 @@ class Child(BaseUser):
     user = models.OneToOneField(
         get_user_model(), on_delete=onDelete, related_name="child"
     )
-    whatsapp_name = models.CharField(max_length=255)
-    whatsapp2_name = models.CharField(max_length=255)
+
     phone_locked = models.BooleanField(default=True)
     def save(self, *args, **kwargs):
         if not self.conform_code:

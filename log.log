@@ -1,0 +1,11 @@
+127.0.0.1:38224 - - [19/May/2025:21:59:24] "GET /" 404 3024
+127.0.0.1:38224 - - [19/May/2025:21:59:24] "GET /favicon.ico" 404 3075
+127.0.0.1:38224 - - [19/May/2025:21:59:33] "GET /.well-known/appspecific/com.chrome.devtools.json" 404 3186
+127.0.0.1:38236 - - [19/May/2025:21:59:37] "WSCONNECTING /ws/general/b0d4b738-b5cc-4c59-95b2-fcab2fe09f6f/" - -
+127.0.0.1:38236 - - [19/May/2025:21:59:37] "WSCONNECT /ws/general/b0d4b738-b5cc-4c59-95b2-fcab2fe09f6f/" - -
+127.0.0.1:38236 - - [19/May/2025:22:00:45] "WSDISCONNECT /ws/general/b0d4b738-b5cc-4c59-95b2-fcab2fe09f6f/" - -
+192.168.89.116:38348 - - [19/May/2025:22:02:21] "GET /" 404 3029
+192.168.89.116:38348 - - [19/May/2025:22:02:21] "GET /favicon.ico" 404 3080
+192.168.89.116:38358 - - [19/May/2025:22:02:31] "WSCONNECTING /ws/general/b0d4b738-b5cc-4c59-95b2-fcab2fe09f6f/" - -
+192.168.89.116:38358 - - [19/May/2025:22:02:31] "WSCONNECT /ws/general/b0d4b738-b5cc-4c59-95b2-fcab2fe09f6f/" - -
+192.168.89.116:38358 - - [19/May/2025:22:03:01] "WSDISCONNECT /ws/general/b0d4b738-b5cc-4c59-95b2-fcab2fe09f6f/" - -

@@ -1,5 +1,4 @@
-from datetime import date
-
+from datetime import datetime, date, time
 from django.shortcuts import get_object_or_404
 from rest_framework import (filters, generics, pagination, permissions, status,
                             viewsets)
@@ -41,7 +40,6 @@ class ScheduleChildListView(generics.ListAPIView):
         try:
             child = Child.objects.get(user=self.request.user)
             #child = Child.objects.first()
-            print(child)
         except ObjectDoesNotExist:
             return queryset.none()  # Return empty queryset if no child exists
 
@@ -121,7 +119,6 @@ class ChildCallRecordingAPIView(APIView):
             is_deleted=False,
             recording_type=recording_type,
             )
-
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(recordings, request)
 
@@ -140,14 +137,16 @@ class ChildCallRecordingPostAPIView(APIView):
                 code=status.HTTP_403_FORBIDDEN,
             )
         data = request.data.copy()
+        dt = datetime.fromtimestamp(int(data["timestamp"]) / 1000.0)
         data['child'] = str(child.id)
+        data["timestamp"] = dt
         serializer = ChildCallRecordingSerializer(data=data)
         
         if serializer.is_valid():
             serializer.save()
             print(serializer.data)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ChangeChildPasswordAPI(generics.GenericAPIView):
@@ -245,17 +244,19 @@ class NotificationListView(generics.ListAPIView):
     queryset = Notification.objects.filter(is_deleted=False)
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
     lookup_url_kwarg = "child_id"
 
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.get_queryset()
             queryset.update(is_read=True)
-            serializer = self.get_serializer(queryset, many=True)
             
-            return Response(serializer.data,
-                    status=status.HTTP_200_OK
-                )
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(queryset, request)
+            serializer = self.get_serializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+            
         except Exception as e:
             return Response(
                 {"error": f"Error retrieving notifications: {str(e)}"},

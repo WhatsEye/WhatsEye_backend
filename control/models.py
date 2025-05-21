@@ -213,6 +213,9 @@ class ChildCallRecording(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     is_read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(
+        help_text="Device timestamp of the call"
+    )
     record_file = models.FileField(upload_to=child_record_upload_path)
     
     recording_type = models.CharField(

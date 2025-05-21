@@ -28,17 +28,23 @@ class UserSerializer(serializers.ModelSerializer):
 class BaseUserShortSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     user_id = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         fields = [
             "id",
             "user_id",
             "username",
+            "full_name",
+            "gender",
             "photo",
         ]
 
     def get_username(self, obj):
         return getattr(obj.user, "username", None)
+
+    def get_full_name(self, obj):
+        return f'{getattr(obj.user, "first_name", None)} {getattr(obj.user, "last_name", None)}'
 
     def get_user_id(self, obj):
         return getattr(obj.user, "id", None)
@@ -63,8 +69,6 @@ class ChildProfileSerializer(serializers.ModelSerializer):
             "photo",
             "birthday",
             "phone_number",
-            "whatsapp_name",
-            "whatsapp2_name",
             "phone_locked",
             "user",
             'num_unread_notifications', 
@@ -120,18 +124,19 @@ class ParentProfileSerializer(serializers.ModelSerializer):
 
 class FamilyProfileSerializer(serializers.ModelSerializer):
     kids = ChildShortSerializer(many=True, read_only=True)
+    mother = ParentShortSerializer(read_only=True)
+    father = ParentShortSerializer(read_only=True)
     count_kids = serializers.SerializerMethodField(read_only=True)
     count_parents = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = Family
-        fields = ["id", "photo",  "name", "about", "kids", "count_kids", "count_parents"]
+        fields = ["id", "photo", "name", "about", "mother", "father", "kids", "count_kids", "count_parents"]
 
     def get_count_kids(self, obj):
         return obj.kids.all().count()
     
     def get_count_parents(self, obj):
         return int(obj.father!=None) + int(obj.mother!=None)
-
 
 class ResetPasswordSerializer(serializers.Serializer):
     username_email = serializers.CharField(max_length=255)
@@ -148,7 +153,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         ):
             raise serializers.ValidationError("No user with this email or username")
         return data
-
 
 class ResetPasswordPhoneSerializer(serializers.Serializer):
     number = PhoneNumberField()

@@ -8,7 +8,9 @@ from django.db import transaction
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
+from control.models import Notification
 from control.api.serializers import ScheduleSerializer
 from control.models import ChildLocation, ChildBadWords, Schedule
 from accounts.models import Child
@@ -24,7 +26,7 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
-        self.group_name = f"notification_{self.child_id}"
+        self.group_name = f"general_{self.child_id}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
@@ -47,7 +49,23 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content, **kwargs):  # Fixed parameter name
         message_type = content.get("type")
 
-        if message_type == "PIN_CHANGE":
+        if message_type == "NOTIFICATION":
+            notification_data = content.get("notification")
+            if not self.validate_notification_data(notification_data):
+                self.send_error("Invalid notification data.")
+                return
+
+            await self.save_notification(notification_data)
+            print(notification_data["timestamp"])
+            try:
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {"type": "notification_message", "notification": notification_data},
+                )
+            except Exception as e:
+                logger.error(f"Error sending group message: {e}")
+        
+        elif message_type == "PIN_CHANGE":
             new_pin = content.get("new_pin")
             if not new_pin:
                 await self.send_json({"type": "ERROR", "message": "Missing new_pin"})
@@ -181,7 +199,119 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
                 self.group_name,
                 {"type": "delete_schedule_confirm"}
             )
+        elif message_type == "RESPONSE_CONTACT":
+            contacts = content.get("contacts")
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "response_contact", "contacts": contacts},
+            ) 
+        elif message_type == "REQUEST_CONTACT":
+            await self.channel_layer.group_send(
+                    self.group_name, {"type": "request_contact"}
+                )
+        elif message_type == "RESPONSE_CURRENT_CHATS":
+            contacts = content.get("contacts")
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "response_current_chats", "contacts": contacts},
+            ) 
+        elif message_type == "REQUEST_CURRENT_CHATS":
+            await self.channel_layer.group_send(
+                    self.group_name, {"type": "request_current_chats"}
+                )
+        
+        elif message_type == "RESPONSE_BLOCK_CHAT":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "response_block_chat"},
+            ) 
+        elif message_type == "REQUEST_BLOCK_CHAT":
+            name = content.get("name")
+            await self.channel_layer.group_send(
+                    self.group_name, {"type": "request_block_chat", "name":name}
+                )
+        
+
+        elif message_type == "RESPONSE_CHAT":
+            chats = content.get("chats")
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "response_chat", "chats":chats},
+            ) 
+        elif message_type == "REQUEST_CHAT":
+            name = content.get("name")
+            await self.channel_layer.group_send(
+                    self.group_name, {"type": "request_chat", "name":name}
+                )
+        elif message_type == "REQUEST_SELECT":
+            name = content.get("name")
+            await self.channel_layer.group_send(
+                    self.group_name, {"type": "request_select", "name":name}
+                )
+    ### WHATSAPP ###
+    async def request_select(self, event):
+        await self.send_json({"type": "REQUEST_SELECT", "name": event["name"]})
+        
+    async def response_chat(self, event):
+        await self.send_json({"type": "RESPONSE_CHAT", "chats": event["chats"]})
+
+    async def request_chat(self, event):
+        await self.send_json({"type": "REQUEST_CHAT", "name": event["name"]})
+
+    async def response_block_chat(self, event):
+        await self.send_json({"type": "RESPONSE_BLOCK_CHAT"})
+
+    async def request_block_chat(self, event):
+        await self.send_json({"type": "REQUEST_BLOCK_CHAT", "name": event["name"]})
+
+
+    async def request_current_chats(self, event):
+        await self.send_json({"type": "REQUEST_CURRENT_CHATS"})
+
+    async def response_current_chats(self, event):
+        await self.send_json({"type": "RESPONSE_CURRENT_CHATS", "contacts": event["contacts"]})
+
+    async def request_contact(self, event):
+        await self.send_json({"type": "REQUEST_CONTACT"})
+
+    async def response_contact(self, event):
+        await self.send_json({"type": "RESPONSE_CONTACT", "contacts": event["contacts"]})
+    ### WHATSAPP ###
+
+
+    ### NOTIFICATION ###
+
+    async def notification_message(self, event):
+        """Send notification to the WebSocket client."""
+
+        await self.send_json({"type": "NOTIFICATION", "notification": event["notification"]})
+
+    def validate_notification_data(self, data):
+        """Ensure required fields are present in the notification."""
+        if not isinstance(data, dict):
+            return False
+        required_fields = ["title", "content", "timestamp"]
+        return all(field in data for field in required_fields)
     
+    @database_sync_to_async
+    def save_notification(self, notification_data):
+        """Persist the notification in the database."""
+        try:
+            Notification.objects.create(
+                title=notification_data.get("title", ""),
+                content=notification_data.get("content", ""),
+                timestamp=notification_data.get("timestamp"),
+                type=notification_data.get("type"),
+                child_id=self.child_id,
+            )
+        except ValidationError as e:
+            logger.error(f"Validation error saving notification: {e}")
+        except Exception as e:
+            logger.exception("Unexpected error while saving notification")
+
+    ### NOTIFICATION ###
+
+
     
     ### SCHEDULE ###
     async def schedules_confirm(self, event):

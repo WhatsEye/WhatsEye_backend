@@ -16,7 +16,13 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = ["*"]
-
+# CSRF_TRUSTED_ORIGINS = [
+#     '*',
+# ]
+TWILIO_ACCOUNT_SID = 'ACb86f46a2490cb0de8fd933b5889d4f48'
+TWILIO_AUTH_TOKEN = '2e93326d57fde6e15e91398bfc2f54ce'
+TWILIO_PHONE_NUMBER = 'whatsapp:+14155238886'
+EMAIL_HOST_USER = "usthb@usthb.dz"
 
 # Application definition
 
@@ -42,6 +48,8 @@ INSTALLED_APPS = [
     # my_apps
     "accounts.apps.AccountsConfig",
     "control.apps.ControlConfig",
+        
+
 ]
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
@@ -58,6 +66,32 @@ CHANNEL_LAYERS = {
 # CHANNELS_WS_PROTOCOL = "https"
 # CHANNELS_WS_CERTIFICATE = "./cert.pem"
 # CHANNELS_WS_KEY = "./key.pem"
+
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:5173",
+
+    "http://localhost:5173",
+    "https://127.0.0.1:8000",
+    "http://127.0.0.1:8000",
+]
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    # "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+CORS_ALLOW_HEADERS = (
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+)
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
@@ -212,3 +246,19 @@ FILE_UPLOAD_HANDLERS = [
 ]
 DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024  # 200 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024  # 200 MB
+
+
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# SSLCERTIFICATE = "./cert.pem"
+# SSLKEY = "./private.pem"
+
+
+# SECURE_SSL_REDIRECT = True  # Force HTTPS
+# SECURE_HSTS_SECONDS = 3600  # Enable HTTP Strict Transport Security (HSTS)
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+# SECURE_BROWSER_XSS_FILTER = True
+# SECURE_CONTENT_TYPE_NOSNIFF = True
+

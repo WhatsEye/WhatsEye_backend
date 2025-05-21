@@ -7,7 +7,7 @@ from .views import (  # SetPasskeyView,; UpdatePasskeyView,; RegisterParentAPI,;
     ChangePasswordAPI, CodeResetAPI, RegisterChildAPI, RegisterFamilyAPI,
     RegisterParentAPI, ResetPasswordAPI, ResetPasswordPhoneAPI,FamilyProfileAPI,
     ChildProfileAPI, ParentProfileAPI,
-    parentInvitationAPI, resendResetPasswordAPI, setWhatsAppNameAPI)
+    parentInvitationAPI, resendResetPasswordAPI)
 
 app_name = "accounts"
 
@@ -39,15 +39,15 @@ urlpatterns = [
 
     path('profile/family/', FamilyProfileAPI.as_view(), name='family-profile'),
 
-    path(
-        "profile/whatsappname/<int:num>/<str:name>/", setWhatsAppNameAPI, name="setWhatsAppNameAPI"
-    ),
+    # path(
+    #     "profile/whatsappname/<int:num>/<str:name>/", setWhatsAppNameAPI, name="setWhatsAppNameAPI"
+    # ),
     path(
         "invitation/parent/<str:email>/", parentInvitationAPI, name="invitation_parent"
     ),
     path("register/family/", RegisterFamilyAPI.as_view(), name="register_family"),
     path(
-        "register/parent/<uuid:fid>",
+        "register/parent/<uuid:fid>/",
         RegisterParentAPI.as_view(),
         name="register_parent",
     ),

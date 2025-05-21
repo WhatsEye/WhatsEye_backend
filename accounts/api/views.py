@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 
+from accounts.twilloV import send_sms
 from django.conf import settings
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.core.mail import EmailMessage
@@ -64,10 +65,10 @@ class FamilyProfileAPI(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Family.objects.filter(father__user=self.request.user) | Family.objects.filter(mother__user=self.request.user)
+        return self.request.user.parent.my_family
 
     def get_object(self):
-        return self.get_queryset().first()
+        return self.get_queryset()
     
 class ResetPasswordPhoneAPI(generics.GenericAPIView):
     serializer_class = ResetPasswordPhoneSerializer
@@ -79,17 +80,16 @@ class ResetPasswordPhoneAPI(generics.GenericAPIView):
             data = get_object_or_404(Parent, phone_number=number)
             if data != None:
                 obj = ResetPassword.objects.create(
-                    phone_number=number, username_email=data.first().user.email
+                    phone_number=number, username_email=data.user.email
                 )
                 obj.save()
 
-                #    try:
-                #         send_sms(obj)
-                #     except:
-                #         obj.delete()
-                #         return Response({"status": status.HTTP_404_NOT_FOUND})
-
-                return Response({"status": status.HTTP_200_OK})
+                # try:
+                #     send_sms(obj.phone_number, obj.code)
+                # except:
+                #     obj.delete()
+                #     return Response({"status": status.HTTP_101_SWITCHING_PROTOCOLS})
+                return Response({"status": status.HTTP_200_OK, "username":data.user.username})
         return Response(
             {"status": status.HTTP_406_NOT_ACCEPTABLE, "error": data.errors}
         )
@@ -102,10 +102,11 @@ class ResetPasswordAPI(generics.GenericAPIView):
         if data.is_valid():
             username_email = request.data["username_email"]
             user = get_object_or_404(
-                get_user_model(),
-                Q(username=username_email)
-                | Q(email=username_email) & Q(is_active=True),
+                Parent,
+                Q(user__username=username_email)
+                | Q(user__email=username_email) & Q(user__is_active=True),
             )
+            user = user.user
             if user != None:
                 obj = ResetPassword(username_email=user.email)
                 obj.save()
@@ -120,7 +121,7 @@ class ResetPasswordAPI(generics.GenericAPIView):
                 msg.content_subtype = "html"
 
                 msg.send()
-                return Response({"status": status.HTTP_200_OK})
+                return Response({"status": status.HTTP_200_OK, "username": user.username})
         return Response(
             {"status": status.HTTP_406_NOT_ACCEPTABLE, "error": data.errors}
         )
@@ -132,6 +133,7 @@ class CodeResetAPI(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         code = request.data.get("confirmation_code")
         obj = get_object_or_404(ResetPassword, code=code)
+        print(obj)
         now = datetime.datetime.now()
 
         if (now.hour - obj.created_at.hour) > 1 and (
@@ -211,24 +213,25 @@ class RegisterParentAPI(generics.GenericAPIView):
             parent.get_new_qr
             parent.save()
 
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        user = Parent(
+        parent = Parent(
             user=user,
-            phone_number=request.data["phone_number.phone_number"],
+            phone_number=request.data["phone_number"]["phone_number"],
             gender=request.data["gender"],
             birthday=request.data["birthday"],
         )
-        user.first_ip = get_user_ip(request)
-        user.ip = get_user_ip(request)
-        user.get_new_code
-        user.save()
-        if user.gender == "M":
-            family.father = user
+        parent.first_ip = get_user_ip(request)
+        parent.ip = get_user_ip(request)
+        parent.get_new_code
+        parent.save()
+        if parent.gender == "M":
+            family.father = parent
         else:
-            family.mother = user
+            family.mother = parent
         family.save()
 
         # template = render_to_string(
@@ -243,7 +246,22 @@ class RegisterParentAPI(generics.GenericAPIView):
         # )
         # msg.content_subtype = "html"
         # msg.send()
-        return Response({"status": status.HTTP_200_OK})
+
+        token_serializer = MyTokenObtainPairSerializer(data={
+            'username': user.username,
+            'password': request.data.get('password')  # Assuming password is sent in request.data
+        }, context={'request': request})
+        token_serializer.is_valid(raise_exception=True)
+        tokens = token_serializer.validated_data
+
+        # Return response with tokens
+        return Response({
+            "status": status.HTTP_200_OK,
+            "access": tokens.get('access'),
+            "refresh": tokens.get('refresh')
+        })
+
+        
 
 
 class RegisterChildAPI(generics.GenericAPIView):
@@ -286,19 +304,19 @@ class RegisterChildAPI(generics.GenericAPIView):
         return Response({"status": status.HTTP_200_OK})
 
 
-@api_view(["post"])
-def setWhatsAppNameAPI(request, num=None, name=None):
+# @api_view(["post"])
+# def setWhatsAppNameAPI(request, num=None, name=None):
 
-    user = request.user
-    child = get_object_or_404(Child, user=user)
-    if(num==1):
-        child.whatsapp_name= name
-    elif(num==2):
-        child.whatsapp2_name= name
-    else:
-        return Response({"status": status.HTTP_400_BAD_REQUEST})
-    child.save()
-    return Response({"status": status.HTTP_200_OK})
+#     user = request.user
+#     child = get_object_or_404(Child, user=user)
+#     if(num==1):
+#         child.whatsapp_name= name
+#     elif(num==2):
+#         child.whatsapp2_name= name
+#     else:
+#         return Response({"status": status.HTTP_400_BAD_REQUEST})
+#     child.save()
+#     return Response({"status": status.HTTP_200_OK})
 
 @api_view(["get"])
 def parentInvitationAPI(request, email):
@@ -325,7 +343,7 @@ def resendResetPasswordAPI(request, username_email):
     user = (
         get_user_model()
         .objects.filter(
-            Q(username=username_email) | Q(email=username_email) & Q(is_active=True)
+            Q(username=username_email) & Q(is_active=True)
         )
         .first()
     )
@@ -334,24 +352,24 @@ def resendResetPasswordAPI(request, username_email):
         if obj != None:
             obj.get_new_code
             obj.save()
-            if obj.phone_number == None:
-                template = render_to_string("email/code_reset.html", {"code": obj.code})
-                msg = EmailMessage(
-                    "Code de confirmation",
-                    template,
-                    settings.EMAIL_HOST_USER,
-                    [user.email],
-                )
-                msg.content_subtype = "html"
-                msg.send()
-                return Response({"status": status.HTTP_200_OK})
-            else:
-                #    try:
-                #         send_sms(obj)
-                #     except:
-                #         obj.delete()
-                #         return Response({"status": status.HTTP_404_NOT_FOUND})
-                print(obj.code)
-                return Response({"status": status.HTTP_200_OK})
+            ##if obj.phone_number == None:
+            template = render_to_string("email/code_reset.html", {"code": obj.code})
+            msg = EmailMessage(
+                "Code de confirmation",
+                template,
+                settings.EMAIL_HOST_USER,
+                [user.email],
+            )
+            msg.content_subtype = "html"
+            msg.send()
+            return Response({"status": status.HTTP_200_OK})
+            # else:
+            #     # try:
+            #     #    send_sms(obj.phone_number, obj.code)
+            #     # except:
+            #         # obj.delete()
+            #         # return Response({"status": status.HTTP_404_NOT_FOUND})
+            #     print(obj.code)
+            #     return Response({"status": status.HTTP_200_OK})
 
     return Response({"status": status.HTTP_406_NOT_ACCEPTABLE, "error": "no user"})

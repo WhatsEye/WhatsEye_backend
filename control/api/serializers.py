@@ -8,7 +8,7 @@ class ChildCallRecordingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChildCallRecording
-        fields = ["id", "date", "is_read", "record_file","child", "is_deleted"]
+        fields = '__all__'
         read_only_fields = ['date']
         extra_kwargs = {"child": {"write_only": True}, "is_deleted": {"write_only": True}}
 
