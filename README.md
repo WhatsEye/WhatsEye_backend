@@ -11,6 +11,8 @@ This guide provides step-by-step instructions to install Django in a virtual env
 
   pip install -r requirements.txt
 
+  python manage.py makemigrations
+ 
   python manage.py migrate
 
   python manage.py createsuperuser
