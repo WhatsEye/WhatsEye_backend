@@ -19,9 +19,7 @@ ALLOWED_HOSTS = ["*"]
 # CSRF_TRUSTED_ORIGINS = [
 #     '*',
 # ]
-TWILIO_ACCOUNT_SID = 'ACb86f46a2490cb0de8fd933b5889d4f48'
-TWILIO_AUTH_TOKEN = '2e93326d57fde6e15e91398bfc2f54ce'
-TWILIO_PHONE_NUMBER = 'whatsapp:+14155238886'
+
 EMAIL_HOST_USER = "usthb@usthb.dz"
 
 # Application definition
