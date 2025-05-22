@@ -171,8 +171,6 @@ class Child(BaseUser):
 
     phone_locked = models.BooleanField(default=True)
     def save(self, *args, **kwargs):
-        if not self.conform_code:
-            self.conform_code = self.generate_code()
         if not self.photo :
             default_image = "boy.png" if self.gender == "M" else "girl.png"
             default_path = f"default/{default_image}"

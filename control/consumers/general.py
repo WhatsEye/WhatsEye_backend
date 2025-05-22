@@ -131,11 +131,6 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
                 self.group_name,
                 {"type": "bad_words"},
             )
-        elif message_type == "CONFIRM_BAD_WORDS":
-            await self.channel_layer.group_send(
-                self.group_name,
-                {"type": "bad_words_confirm"}
-            )
         elif message_type == "LOCK_PHONE":
             phone_locked = await self.lock_phone_status()
             await self.channel_layer.group_send(
@@ -152,29 +147,20 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
                 self.group_name,
                 {"type": "schedules"},
             )
-        elif message_type == "CONFIRM_SCHEDULES":
-            await self.channel_layer.group_send(
-                self.group_name,
-                {"type": "schedules_confirm"}
-            )
         elif message_type == "ADD_SCHEDULE":
             if not isinstance(content, dict) or not all(
-                key in content for key in ["name", "start_time", "end_time", "start_date","end_date","days"]
+                key in content for key in ["id"]
             ):
                 await self.send_json(
-                    {"type": "ERROR", "message": "Invalid Schedule data"}
+                    {"type": "ERROR", "message": "Invalid Schedule id"}
                 )
-                return
-            schedule = await self.add_schedule_db(content)
+                return  
+            schedule = await self.add_schedule_db(content["id"])
             await self.channel_layer.group_send(
                 self.group_name,
                 {"type": "add_schedule", "schedule":schedule},
             )
-        elif message_type == "CONFIRM_ADD_SCHEDULE":
-            await self.channel_layer.group_send(
-                self.group_name,
-                {"type": "add_schedule_confirm"}
-            )
+
         elif message_type == "DELETE_SCHEDULE":
             if not isinstance(content, dict) or not all(
                 key in content for key in ["id"]
@@ -193,11 +179,6 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.group_name,
                 {"type": "delete_schedule", "id":content["id"]},
-            )
-        elif message_type == "CONFIRM_DELETE_SCHEDULE":
-            await self.channel_layer.group_send(
-                self.group_name,
-                {"type": "delete_schedule_confirm"}
             )
         elif message_type == "RESPONSE_CONTACT":
             contacts = content.get("contacts")
@@ -314,12 +295,9 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
 
     
     ### SCHEDULE ###
-    async def schedules_confirm(self, event):
-        await self.send_json({"type": "CONFIRM_SCHEDULES"})
-
     async def schedules(self, event):
-        bad_words = await self.get_schedules()
-        await self.send_json({"type": "SCHEDULE", "schedules": bad_words})
+        schedules = await self.get_schedules()
+        await self.send_json({"type": "SCHEDULE", "schedules": schedules})
 
     @database_sync_to_async
     def get_schedules(self):
@@ -327,6 +305,7 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             raise ValueError("child_id must be set before calling get_bad_words")
         child = get_object_or_404(Child, id=self.child_id)
         obj = Schedule.objects.filter(is_deleted=False)
+
         data = obj.filter(child=child)
         listdata = []
         for obj in data:
@@ -337,7 +316,7 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
                 "end_time": obj.end_time.strftime("%H:%M:%S") if isinstance(obj.end_time, time) else str(obj.end_time),
                 "start_date": obj.start_date.strftime("%Y-%m-%d") if isinstance(obj.start_date, date) else str(obj.start_date),
                 "end_date": obj.end_date.strftime("%Y-%m-%d") if isinstance(obj.end_date, date) else str(obj.end_date),
-                "days": list(obj.days.values_list('value', flat=True)), 
+                "days": [obj.id for obj in obj.days.all()], 
             }
             listdata.append(schedule_dict)
         return listdata
@@ -353,42 +332,25 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
         obj.is_deleted=True
         obj.save()
         return True
-    
-    async def delete_schedule_confirm(self, event):
-        await self.send_json({"type": "CONFIRM_DELETE_SCHEDULE"})
-
 
     async def add_schedule(self, event):
         await self.send_json({"type": "ADD_SCHEDULE", "schedule":event["schedule"]})
 
     @database_sync_to_async
-    def add_schedule_db(self, data):
+    def add_schedule_db(self, id):
         child = Child.objects.get(id=self.child_id)
-        obj = Schedule.objects.create(
-            child=child,
-            name=data["name"],
-            start_time=data["start_time"], 
-            end_time=data["end_time"], 
-            start_date=data["start_date"],
-            end_date=data["end_date"],
-        )
-        obj.days.set(data["days"])
+        obj = Schedule.objects.filter(id=id).first()
 
         schedule_dict = {
                 "id": obj.id,
                 "name": obj.name,
                 "start_time": obj.start_time.strftime("%H:%M:%S") if isinstance(obj.start_time, time) else str(obj.start_time),
                 "end_time": obj.end_time.strftime("%H:%M:%S") if isinstance(obj.end_time, time) else str(obj.end_time),
-                # Convert date objects to strings for JSON
                 "start_date": obj.start_date.strftime("%Y-%m-%d") if isinstance(obj.start_date, date) else str(obj.start_date),
                 "end_date": obj.end_date.strftime("%Y-%m-%d") if isinstance(obj.end_date, date) else str(obj.end_date),
-                # You'll likely need to fetch and serialize the 'days' relationship as well
-                "days": list(obj.days.values_list('value', flat=True)), # Example: get a list of day values
+                "days": [obj.id for obj in obj.days.all()]
             }
         return schedule_dict
-    
-    async def add_schedule_confirm(self, event):
-        await self.send_json({"type": "CONFIRM_ADD_SCHEDULE"})
     ### SCHEDULE ###
 
     ### LOCK ###
@@ -411,9 +373,6 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
     ### LOCK ###
 
     ### BAD WORDS ###
-    async def bad_words_confirm(self, event):
-        await self.send_json({"type": "CONFIRM_BAD_WORDS"})
-
     async def bad_words(self, event):
         bad_words = await self.get_bad_words()
         await self.send_json({"type": "BAD_WORDS", "bad_words": bad_words})
