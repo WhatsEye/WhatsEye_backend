@@ -122,7 +122,7 @@ class ChildCallRecordingAPIView(APIView):
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(recordings, request)
 
-        serializer = ChildCallRecordingSerializer(page, many=True)
+        serializer = ChildCallRecordingSerializer(page, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)
     
 class ChildCallRecordingPostAPIView(APIView):
