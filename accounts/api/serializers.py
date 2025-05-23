@@ -55,6 +55,7 @@ class ChildShortSerializer(BaseUserShortSerializer):
 
 class ParentShortSerializer(BaseUserShortSerializer):
     class Meta(BaseUserShortSerializer.Meta):
+        fields = [*BaseUserShortSerializer.Meta.fields, "qr_image"]
         model = Parent
 
 class ChildProfileSerializer(serializers.ModelSerializer):
@@ -130,7 +131,7 @@ class FamilyProfileSerializer(serializers.ModelSerializer):
     count_parents = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = Family
-        fields = ["id", "photo", "name", "about", "mother", "father", "kids", "count_kids", "count_parents"]
+        fields = ["id", "photo","qr_image", "name", "about", "mother", "father", "kids", "count_kids", "count_parents"]
 
     def get_count_kids(self, obj):
         return obj.kids.all().count()
