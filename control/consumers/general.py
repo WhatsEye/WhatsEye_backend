@@ -208,8 +208,9 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             ) 
         elif message_type == "REQUEST_BLOCK_CHAT":
             name = content.get("name")
+            pos = content.get("pos")
             await self.channel_layer.group_send(
-                    self.group_name, {"type": "request_block_chat", "name":name}
+                    self.group_name, {"type": "request_block_chat", "name":name, "pos": pos}
                 )
         
 
@@ -229,7 +230,39 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_send(
                     self.group_name, {"type": "request_select", "name":name}
                 )
+        elif message_type == "REQUEST_FILES":
+            await self.channel_layer.group_send(
+                self.group_name, {"type": "request_files"}
+            )
+        elif message_type == "RESPONSE_FILES":
+            files = content.get("files")
+            await self.channel_layer.group_send(
+                self.group_name, {"type": "response_files", "files": files}
+            )
+        elif message_type == "REQUEST_FILE_URI":
+            uri = content.get("uri")
+            await self.channel_layer.group_send(
+                self.group_name, {"type": "request_file_uri", "uri": uri}
+            )
+        elif message_type == "RESPONSE_FILE_URI":
+            file = content.get("file")
+            await self.channel_layer.group_send(
+                self.group_name, {"type": "response_file_uri", "file": file}
+            )
     ### WHATSAPP ###
+    async def request_file_uri(self, event):
+        await self.send_json({"type": "REQUEST_FILE_URI", "uri": event["uri"]})
+
+    async def response_file_uri(self, event):
+        await self.send_json({"type": "RESPONSE_FILE_URI", "file": event["file"]})
+
+    async def request_files(self, event):
+        await self.send_json({"type": "REQUEST_FILES"})
+
+    async def response_files(self, event):
+        await self.send_json({"type": "RESPONSE_FILES", "files": event["files"]})
+
+
     async def request_select(self, event):
         await self.send_json({"type": "REQUEST_SELECT", "name": event["name"]})
         
@@ -243,7 +276,7 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "RESPONSE_BLOCK_CHAT"})
 
     async def request_block_chat(self, event):
-        await self.send_json({"type": "REQUEST_BLOCK_CHAT", "name": event["name"]})
+        await self.send_json({"type": "REQUEST_BLOCK_CHAT", "name": event["name"], "pos": event["pos"]})
 
 
     async def request_current_chats(self, event):
