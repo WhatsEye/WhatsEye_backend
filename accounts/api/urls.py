@@ -6,7 +6,7 @@ from .auth import MyTokenObtainPairView
 from .views import (  # SetPasskeyView,; UpdatePasskeyView,; RegisterParentAPI,; JoinFamilyParentAPI,; JoinFamilyChildAPI,; FamilyViewSet
     ChangePasswordAPI, CodeResetAPI, RegisterChildAPI, RegisterFamilyAPI,
     RegisterParentAPI, ResetPasswordAPI, ResetPasswordPhoneAPI,FamilyProfileAPI,
-    ChildProfileAPI, ParentProfileAPI,
+    ChildProfileAPI, ParentProfileAPI,CheckPasswordView,
     parentInvitationAPI, resendResetPasswordAPI)
 
 app_name = "accounts"
@@ -17,6 +17,7 @@ router = routers.DefaultRouter()
 
 
 urlpatterns = [
+    path('check-password/', CheckPasswordView.as_view(), name='check_password'),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path(

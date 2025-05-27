@@ -13,12 +13,13 @@ from rest_framework import (filters, generics, pagination, permissions, status,
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.contrib.auth import authenticate
 
 from accounts.models import Child, Family, Parent, ResetPassword
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from .auth import MyTokenObtainPairSerializer
-from .serializers import (ChangePasswordSerializer,
+from .serializers import (ChangePasswordSerializer,PasswordCheckSerializer,
                           GetCodeResetSerializer, RegisterFamilySerializer,
                           RegisterSerializer, ResetPasswordPhoneSerializer,
                           ResetPasswordSerializer, FamilyProfileSerializer,UserSerializer,
@@ -47,7 +48,30 @@ class ChildProfileAPI(generics.RetrieveUpdateAPIView):
         queryset = self.get_queryset().filter(id=uuid)
         obj = generics.get_object_or_404(queryset)
         return obj
-    
+
+class CheckPasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordCheckSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        password = serializer.validated_data['password']
+        user = authenticate(username=request.user.username, password=password)
+        
+        if user is not None:
+            return Response({
+                'is_correct': True,
+                'message': 'Password is correct'
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            'is_correct': False,
+            'message': 'Password is incorrect'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
 class ParentProfileAPI(generics.RetrieveUpdateAPIView):
     serializer_class = ParentProfileSerializer
     permission_classes = [permissions.IsAuthenticated]

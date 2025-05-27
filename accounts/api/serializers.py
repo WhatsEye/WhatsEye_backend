@@ -9,6 +9,8 @@ from rest_framework import serializers
 
 from control.models import Notification, ChildCallRecording
 
+class PasswordCheckSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True)
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,6 +53,7 @@ class BaseUserShortSerializer(serializers.ModelSerializer):
 
 class ChildShortSerializer(BaseUserShortSerializer):
     class Meta(BaseUserShortSerializer.Meta):
+
         model = Child
 
 class ParentShortSerializer(BaseUserShortSerializer):
