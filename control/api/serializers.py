@@ -39,6 +39,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "content",
             "timestamp",
             "type",
+            "is_read"
         ]  # Specify fields you want to expose
 
 

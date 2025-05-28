@@ -4,6 +4,7 @@ from rest_framework import (filters, generics, pagination, permissions, status,
                             viewsets)
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
@@ -65,7 +66,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.filter(is_deleted=False)
     serializer_class = ScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]  # Adjust permissions as needed
-    
+    pagination_class = StandardResultsSetPagination
     # Optional: filter schedules by child, user, etc.
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -122,7 +123,7 @@ class ChildCallRecordingAPIView(APIView):
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(recordings, request)
 
-        serializer = ChildCallRecordingSerializer(page, many=True, context={'request': request})
+        serializer = ChildCallRecordingSerializer(page, many=True,context={'request': request})
         return paginator.get_paginated_response(serializer.data)
     
 class ChildCallRecordingPostAPIView(APIView):
@@ -246,15 +247,20 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     lookup_url_kwarg = "child_id"
+    filter_backends = [DjangoFilterBackend]
+
+    #search_fields = ['type']
+    filterset_fields = ['type']
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.get_queryset()
-            queryset.update(is_read=True)
+            queryset = self.filter_queryset(self.get_queryset())
             
             paginator = self.pagination_class()
             page = paginator.paginate_queryset(queryset, request)
             serializer = self.get_serializer(page, many=True)
+            queryset.update(is_read=True)
+
             return paginator.get_paginated_response(serializer.data)
             
         except Exception as e:

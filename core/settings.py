@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django_twilio",
     "phonenumber_field",
     "drf_spectacular",
+    'django_filters',
     # 3_ed party
     "sslserver",
     "rest_framework",

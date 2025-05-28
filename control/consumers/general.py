@@ -249,6 +249,36 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.group_name, {"type": "response_file_uri", "file": file}
             )
+        elif message_type == "CONFIRM_VOICE_RECORD":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "voice_confirm",
+                },
+            )
+        elif message_type == "CONFIRM_VIDEO_RECORD":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "video_confirm",
+                },
+            )
+
+    async def voice_confirm(self, event):
+        await self.send_json(
+            {
+                "type": "CONFIRM_VOICE_RECORD",
+            }
+        )
+    async def video_confirm(self, event):
+        await self.send_json(
+            {
+                "type": "CONFIRM_VIDEO_RECORD",
+            }
+        )
+
+
+
     ### WHATSAPP ###
     async def request_file_uri(self, event):
         await self.send_json({"type": "REQUEST_FILE_URI", "uri": event["uri"]})
