@@ -2,11 +2,14 @@ from datetime import datetime, date, time
 from django.shortcuts import get_object_or_404
 from rest_framework import (filters, generics, pagination, permissions, status,
                             viewsets)
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+
 from django.db import models
+from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 
 from accounts.api.serializers import ChangePasswordSerializer
@@ -255,12 +258,9 @@ class NotificationListView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
-            
             paginator = self.pagination_class()
             page = paginator.paginate_queryset(queryset, request)
             serializer = self.get_serializer(page, many=True)
-            queryset.update(is_read=True)
-
             return paginator.get_paginated_response(serializer.data)
             
         except Exception as e:
@@ -436,3 +436,25 @@ class SetHourlyUsageAPIView(APIView):
                 status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes((permissions.IsAuthenticated,))
+def make_read_notifications(request, child_id=None):
+    if id != None:
+        parent = request.user.parent
+        child = get_object_or_404(Child, id=child_id)
+
+        if child.my_family != parent.my_family:
+            permission_denied(
+                request,
+                message="No permission to access this child",
+                code=status.HTTP_403_FORBIDDEN,
+            )
+        
+        Notification.objects.filter(Q(child__id=child_id) & Q(is_deleted=False) & Q(is_read=False)).update(
+            is_read=True
+        )
+        return Response({"status": status.HTTP_200_OK})
+
+    return Response({"status": status.HTTP_404_NOT_FOUND})

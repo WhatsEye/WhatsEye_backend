@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (ChildLocationListView, NotificationListView,
                     SetHourlyUsageAPIView, UserUsageAPIView,ScheduleViewSet,
                     ScheduleChildListView, ChildBadWordsView,ChangeChildPasswordAPI,
-                    ChildCallRecordingAPIView,ChildCallRecordingUpdateView,ChildCallRecordingPostAPIView)
+                    ChildCallRecordingAPIView,ChildCallRecordingUpdateView,ChildCallRecordingPostAPIView, make_read_notifications)
 
 urlpatterns = [
     path('records/<uuid:child_id>/', ChildCallRecordingPostAPIView.as_view(), name='child-records-post'),
@@ -27,6 +27,7 @@ urlpatterns = [
         ChildBadWordsView.as_view(),
         name="child-bad-words",
     ),
+    path("notifications/make/read/<uuid:child_id>/", make_read_notifications, name="make_read_notifications"),
     path(
         "notifications/<uuid:child_id>/<int:pk>/",
         NotificationListView.as_view(),
