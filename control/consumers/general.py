@@ -222,8 +222,9 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
             ) 
         elif message_type == "REQUEST_CHAT":
             name = content.get("name")
+            pos = content.get("pos")
             await self.channel_layer.group_send(
-                    self.group_name, {"type": "request_chat", "name":name}
+                    self.group_name, {"type": "request_chat", "name":name, "pos": pos}
                 )
         elif message_type == "REQUEST_SELECT":
             name = content.get("name")
@@ -300,7 +301,7 @@ class GeneralConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "RESPONSE_CHAT", "chats": event["chats"]})
 
     async def request_chat(self, event):
-        await self.send_json({"type": "REQUEST_CHAT", "name": event["name"]})
+        await self.send_json({"type": "REQUEST_CHAT", "name": event["name"], "pos": event["pos"]})
 
     async def response_block_chat(self, event):
         await self.send_json({"type": "RESPONSE_BLOCK_CHAT"})

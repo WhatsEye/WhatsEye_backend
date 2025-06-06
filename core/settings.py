@@ -61,6 +61,12 @@ CHANNEL_LAYERS = {
         # },
         # "localhost:5173", "http://localhost:5173/"
     },
+    #  "default": {
+    #     "BACKEND": "channels_redis.core.RedisChannelLayer",
+    #     "CONFIG": {
+    #         "hosts": [("127.0.0.1", 6379)],
+    #     },
+    # },
 }
 CHANNELS_WS_PROTOCOL = "https"
 # CHANNELS_WS_CERTIFICATE = "./cert.pem"
