@@ -186,7 +186,7 @@ class Family(models.Model):
 
     id = models.UUIDField(default=uuid4, primary_key=True, editable=False)
     name = models.CharField(max_length=100, help_text="Family name")
-    about = models.CharField(max_length=255, blank=True)
+    about = models.TextField(blank=True)
 
 
     father = models.ForeignKey(
