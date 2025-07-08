@@ -27,6 +27,8 @@ EMAIL_HOST_USER = "usthb@usthb.dz"
 INSTALLED_APPS = [
     "daphne",
     "channels",
+      "accounts.apps.AccountsConfig",
+    "control.apps.ControlConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,8 +47,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     # my_apps
-    "accounts.apps.AccountsConfig",
-    "control.apps.ControlConfig",
+  
         
 
 ]
@@ -182,9 +183,17 @@ WSGI_APPLICATION = "core.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    # "default": {
+    #     "ENGINE": "django.db.backends.sqlite3",
+    #     "NAME": BASE_DIR / "db.sqlite3",
+    # }
+     'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'whatseye2',
+        'USER': 'postgres',
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 

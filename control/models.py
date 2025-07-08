@@ -110,7 +110,6 @@ class Schedule(models.Model):
     is_deleted = models.BooleanField(default=False)
 
 
-# ... your model definition
 
     @property
     def is_active_now(self):
@@ -176,6 +175,7 @@ class Notification(models.Model):
     type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     is_read = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+
 
     def __str__(self):
         return f"Notification: {self.title} (Type: {self.type}, Timestamp: {self.timestamp})"
